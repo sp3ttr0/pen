@@ -5,8 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Security Header Inspector · Pen</title>
   <link rel="stylesheet" href="../home.css?v=caption-clear-1">
-  <link rel="stylesheet" href="inspector.css?v=2">
-  <script src="inspector.js?v=2" defer></script>
+  <link rel="stylesheet" href="inspector.css?v=3">
+  <script src="inspector.js?v=3" defer></script>
 </head>
 <body>
   <header class="masthead">
@@ -16,7 +16,15 @@
   <main class="inspector">
     <h1>Security Header Inspector</h1>
     <p>Copy the final HTML document’s response headers from DevTools → Network → Headers. The inspector checks the text you paste entirely in your browser.</p>
+    <form id="url-inspector">
+      <label for="target-url">Website URL</label>
+      <input id="target-url" type="url" required placeholder="https://example.com/">
+      <p>Follows redirects. For other sites, the browser can only read headers that the site exposes to Pen. If access is blocked, use Paste headers below.</p>
+      <div class="controls"><button type="submit">Check URL</button></div>
+      <p id="url-status" role="status"></p>
+    </form>
     <form id="inspector">
+      <h2>Paste headers</h2>
       <label for="headers">HTTP response headers</label>
       <textarea id="headers" rows="8" maxlength="100000" spellcheck="false" autocomplete="off" required placeholder="X-Content-Type-Options: nosniff"></textarea>
       <div class="controls">
@@ -28,6 +36,7 @@
     <p id="status" role="status"></p>
     <section id="results" aria-labelledby="results-title" hidden>
       <h2 id="results-title">Header review</h2>
+      <p id="response-details" class="header-value" hidden></p>
       <div id="findings"></div>
     </section>
     <p><a href="https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html">OWASP HTTP security header guidance ↗</a></p>

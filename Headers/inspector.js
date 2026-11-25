@@ -46,52 +46,116 @@ const input = document.querySelector("#headers");
 const results = document.querySelector("#results");
 const findings = document.querySelector("#findings");
 const status = document.querySelector("#status");
+const responseDetails = document.querySelector("#response-details");
+const urlForm = document.querySelector("#url-inspector");
+const urlStatus = document.querySelector("#url-status");
+let pending;
+
+function cancelUrlCheck() {
+  pending?.abort();
+  pending = undefined;
+  urlStatus.textContent = "";
+}
 
 function resetResults() {
+  responseDetails.hidden = true;
+  responseDetails.textContent = "";
   findings.replaceChildren();
   results.hidden = true;
   status.textContent = "";
 }
 
+function renderChecks(checks, limited = false) {
+  for (const { name, current, state: findingState, guidance, needsReview } of checks) {
+    const card = document.createElement("article");
+    card.className = "finding";
+    const heading = document.createElement("h3");
+    heading.textContent = name;
+    const state = document.createElement("p");
+    state.className = "state";
+    const unobservable = limited && !current.length;
+    state.textContent = unobservable ? "Unavailable · May be hidden by CORS" : findingState;
+    const detail = document.createElement("p");
+    detail.textContent = needsReview && !unobservable ? "Recommended: " + guidance : guidance;
+    card.append(heading, state);
+    if (current.length) {
+      const label = document.createElement("p");
+      label.textContent = current.length === 1 ? "Observed value" : "Observed values";
+      card.append(label);
+      for (const value of current) {
+        const code = document.createElement("pre");
+        code.className = "header-value";
+        code.textContent = value || "(empty value)";
+        card.append(code);
+      }
+    }
+    card.append(detail);
+    findings.append(card);
+  }
+  results.hidden = false;
+}
+
+urlForm.addEventListener("submit", async event => {
+  event.preventDefault();
+  cancelUrlCheck();
+  resetResults();
+  const url = new URL(document.querySelector("#target-url").value);
+  if (!["http:", "https:"].includes(url.protocol) || url.username || url.password) {
+    urlStatus.textContent = "Enter an HTTP or HTTPS URL without embedded credentials.";
+    return;
+  }
+  url.hash = "";
+  const request = new AbortController();
+  pending = request;
+  const timer = setTimeout(() => request.abort(), 12000);
+  urlStatus.textContent = "Checking URL…";
+  try {
+    const response = await fetch(url, {
+      redirect: "follow", credentials: "omit", referrerPolicy: "no-referrer",
+      signal: request.signal,
+    });
+    if (response.body) void response.body.cancel().catch(() => {});
+    if (pending !== request) return;
+    const headers = new Map(Array.from(response.headers, ([name, value]) => [name, [value]]));
+    const limited = response.type === "cors";
+    renderChecks(inspect(headers), limited);
+    responseDetails.textContent = "Final URL: " + response.url + "\nHTTP status: " + response.status;
+    responseDetails.hidden = false;
+    urlStatus.textContent = limited
+      ? "Review complete for browser-visible headers. Paste the full response headers to check any unavailable values."
+      : "Review complete for the final response.";
+  } catch {
+    if (pending === request) {
+      urlStatus.textContent = request.signal.aborted
+        ? "The request timed out. Try again or use Paste headers."
+        : "The browser could not read the response. Check the URL and connection, or use Paste headers if the site blocks cross-origin access.";
+    }
+  } finally {
+    clearTimeout(timer);
+    if (pending === request) pending = undefined;
+  }
+});
+
 form.addEventListener("submit", event => {
   event.preventDefault();
+  cancelUrlCheck();
   resetResults();
   try {
     const checks = inspect(parseHeaders(input.value));
-    for (const { name, current, state: findingState, guidance, needsReview } of checks) {
-      const card = document.createElement("article");
-      card.className = "finding";
-      const heading = document.createElement("h3");
-      heading.textContent = name;
-      const state = document.createElement("p");
-      state.className = "state";
-      state.textContent = findingState;
-      const detail = document.createElement("p");
-      detail.textContent = needsReview ? "Recommended: " + guidance : guidance;
-      card.append(heading, state);
-      if (current.length) {
-        const label = document.createElement("p");
-        label.textContent = current.length === 1 ? "Observed value" : "Observed values";
-        card.append(label);
-        for (const value of current) {
-          const code = document.createElement("pre");
-          code.className = "header-value";
-          code.textContent = value || "(empty value)";
-          card.append(code);
-        }
-      }
-      card.append(detail);
-      findings.append(card);
-    }
-    results.hidden = false;
+    renderChecks(checks);
     status.textContent = "Six checks complete. Findings apply to the pasted header block and do not establish whether a site is vulnerable.";
   } catch (error) {
     status.textContent = error.message;
   }
 });
 
-input.addEventListener("input", resetResults);
-form.addEventListener("reset", resetResults);
+function clearPasteResults() {
+  cancelUrlCheck();
+  resetResults();
+}
+
+input.addEventListener("input", clearPasteResults);
+form.addEventListener("reset", clearPasteResults);
 document.querySelector("#example").addEventListener("click", () => {
   input.value = [
     "HTTP/2 200",

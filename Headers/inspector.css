@@ -26,3 +26,14 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+#url-inspector { margin-bottom: 18px; }
+#target-url {
+  width: 100%;
+  padding: 12px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  font: inherit;
+}
+#response-details { white-space: pre-wrap; }
