@@ -88,13 +88,20 @@ function renderChecks(checks, limited = false) {
     groups.get(group).push(check);
   }
   for (const title of ["Missing Security Headers", "Deprecated Security Headers", "Present Security Headers", "Headers Unavailable to Browser"]) {
-    const entries = groups.get(title);
-    if (!entries) continue;
+    const entries = groups.get(title) ?? [];
+    if (!entries.length && title !== "Deprecated Security Headers") continue;
     const section = document.createElement("section");
     section.className = "finding-group";
     const heading = document.createElement("h3");
     heading.textContent = title;
     section.append(heading);
+    if (!entries.length) {
+      const empty = document.createElement("p");
+      empty.textContent = limited
+        ? "No deprecated security headers found in the browser-visible response."
+        : "No deprecated security headers found";
+      section.append(empty);
+    }
     for (const check of entries) section.append(renderFinding(check, limited));
     findings.append(section);
   }
