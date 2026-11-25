@@ -152,7 +152,7 @@ urlForm.addEventListener("submit", async event => {
   urlStatus.textContent = "Checking URL…";
   try {
     const response = await fetch(url, {
-      redirect: "follow", credentials: "omit", referrerPolicy: "no-referrer",
+      cache: "no-store", redirect: "follow", credentials: "omit", referrerPolicy: "no-referrer",
       signal: request.signal,
     });
     if (response.body) void response.body.cancel().catch(() => {});
