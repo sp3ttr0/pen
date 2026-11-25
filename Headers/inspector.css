@@ -17,3 +17,12 @@
 .finding h3 { margin: 0; font-size: 1rem; letter-spacing: 0; overflow-wrap: anywhere; }
 .finding p { margin: 6px 0 0; }
 .finding .state { color: var(--blue); font-size: .875rem; }
+
+.header-value {
+  margin: 6px 0 12px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  background: var(--bg);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
