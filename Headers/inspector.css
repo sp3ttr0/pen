@@ -14,7 +14,7 @@
 .controls button[type=submit] { color: #201d13; background: var(--blue); font-weight: 650; }
 .inspector :focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
 #findings { display: grid; gap: 10px; margin: 16px 0 24px; }
-.finding h3 { margin: 0; font-size: 1rem; letter-spacing: 0; overflow-wrap: anywhere; }
+.finding h4 { margin: 0; font-size: 1rem; letter-spacing: 0; overflow-wrap: anywhere; }
 .finding p { margin: 6px 0 0; }
 .finding .state { color: var(--blue); font-size: .875rem; }
 
@@ -37,3 +37,6 @@
   font: inherit;
 }
 #response-details { white-space: pre-wrap; }
+
+.finding-group { display: grid; gap: 10px; }
+.finding-group h3 { margin: 12px 0 0; font-size: 1.25rem; letter-spacing: 0; }

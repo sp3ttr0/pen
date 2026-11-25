@@ -31,14 +31,26 @@ function inspect(headers) {
     ["Referrer-Policy", /^(no-referrer|same-origin|strict-origin|strict-origin-when-cross-origin)$/.test(values("Referrer-Policy").join(",").split(",").at(-1).trim()), "Consider strict-origin-when-cross-origin or no-referrer, depending on how much referrer information the site needs to share."],
     ["Cross-Origin-Opener-Policy", has("Cross-Origin-Opener-Policy", "same-origin"), "Consider same-origin for strict opener isolation. Check compatibility with sign-in and payment popups."],
   ];
-  return checks.map(([name, detected, guidance]) => {
+  const findings = checks.map(([name, detected, guidance]) => {
     const current = observed(name);
     const optional = name === "X-Frame-Options" && framing;
     const state = current.length
       ? (detected ? "Setting detected" : "Present · Review recommended")
-      : (optional ? "Missing · CSP alternative present" : "Missing · Review recommended");
+      : (optional ? "Missing · CSP alternative present" : "");
     return { name, current, state, guidance, needsReview: !detected && !optional };
   });
+
+  const deprecated = [
+    ["X-XSS-Protection", "Remove this legacy browser filter header and use an enforced Content Security Policy."],
+    ["Expect-CT", "Remove this header. Modern browsers enforce their own Certificate Transparency requirements."],
+    ["Public-Key-Pins", "Remove HTTP public key pinning. Use standard TLS certificate validation and certificate monitoring."],
+    ["Public-Key-Pins-Report-Only", "Remove this legacy pinning report header and use certificate monitoring."],
+  ];
+  for (const [name, guidance] of deprecated) {
+    const current = observed(name);
+    if (current.length) findings.push({ name, current, guidance, deprecated: true, needsReview: true });
+  }
+  return findings;
 }
 
 const form = document.querySelector("#inspector");
@@ -66,33 +78,55 @@ function resetResults() {
 }
 
 function renderChecks(checks, limited = false) {
-  for (const { name, current, state: findingState, guidance, needsReview } of checks) {
-    const card = document.createElement("article");
-    card.className = "finding";
+  const groups = new Map();
+  for (const check of checks) {
+    const group = check.deprecated ? "Deprecated Security Headers"
+      : check.current.length ? "Present Security Headers"
+      : limited ? "Headers Unavailable to Browser"
+      : "Missing Security Headers";
+    if (!groups.has(group)) groups.set(group, []);
+    groups.get(group).push(check);
+  }
+  for (const title of ["Missing Security Headers", "Deprecated Security Headers", "Present Security Headers", "Headers Unavailable to Browser"]) {
+    const entries = groups.get(title);
+    if (!entries) continue;
+    const section = document.createElement("section");
+    section.className = "finding-group";
     const heading = document.createElement("h3");
-    heading.textContent = name;
-    const state = document.createElement("p");
-    state.className = "state";
-    const unobservable = limited && !current.length;
-    state.textContent = unobservable ? "Unavailable · May be hidden by CORS" : findingState;
-    const detail = document.createElement("p");
-    detail.textContent = needsReview && !unobservable ? "Recommended: " + guidance : guidance;
-    card.append(heading, state);
-    if (current.length) {
-      const label = document.createElement("p");
-      label.textContent = current.length === 1 ? "Observed value" : "Observed values";
-      card.append(label);
-      for (const value of current) {
-        const code = document.createElement("pre");
-        code.className = "header-value";
-        code.textContent = value || "(empty value)";
-        card.append(code);
-      }
-    }
-    card.append(detail);
-    findings.append(card);
+    heading.textContent = title;
+    section.append(heading);
+    for (const check of entries) section.append(renderFinding(check, limited));
+    findings.append(section);
   }
   results.hidden = false;
+}
+
+function renderFinding({ name, current, state: findingState, guidance, needsReview }, limited) {
+  const card = document.createElement("article");
+  card.className = "finding";
+  const heading = document.createElement("h4");
+  heading.textContent = name;
+  const state = document.createElement("p");
+  state.className = "state";
+  const unobservable = limited && !current.length;
+  state.textContent = unobservable ? "" : findingState ?? "";
+  const detail = document.createElement("p");
+  detail.textContent = needsReview && !unobservable ? "Recommended: " + guidance : guidance;
+  card.append(heading);
+  if (state.textContent) card.append(state);
+  if (current.length) {
+    const label = document.createElement("p");
+    label.textContent = current.length === 1 ? "Observed value" : "Observed values";
+    card.append(label);
+    for (const value of current) {
+      const code = document.createElement("pre");
+      code.className = "header-value";
+      code.textContent = value || "(empty value)";
+      card.append(code);
+    }
+  }
+  card.append(detail);
+  return card;
 }
 
 urlForm.addEventListener("submit", async event => {
@@ -143,7 +177,7 @@ form.addEventListener("submit", event => {
   try {
     const checks = inspect(parseHeaders(input.value));
     renderChecks(checks);
-    status.textContent = "Six checks complete. Findings apply to the pasted header block and do not establish whether a site is vulnerable.";
+    status.textContent = "Header review complete. Findings apply to the pasted header block and do not establish whether a site is vulnerable.";
   } catch (error) {
     status.textContent = error.message;
   }
@@ -164,6 +198,7 @@ document.querySelector("#example").addEventListener("click", () => {
     "Strict-Transport-Security: max-age=31536000",
     "X-Content-Type-Options: nosniff",
     "Referrer-Policy: strict-origin-when-cross-origin",
+    "X-XSS-Protection: 1; mode=block",
   ].join("\n");
   form.requestSubmit();
 });
