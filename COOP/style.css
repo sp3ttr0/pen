@@ -34,3 +34,5 @@ input:focus-visible{outline-color:var(--cyan)}
 :root{--bg:#101110;--panel:#191a18;--text:#f0eee7;--muted:#aba99f;--border:#383a33;--accent:#e3bc52;--tint:#25261f;--button-text:#201d13;--cyan:#d7c58c}
 [data-theme="light"]{--bg:#f5f2e8;--panel:#fffdf7;--text:#292b26;--muted:#66675e;--border:#d8d3c0;--accent:#80631c;--tint:#ede7d5;--cyan:#80693b;--button-text:#201d13}
 .primary,.primary:hover,[data-theme="light"] .primary{background:linear-gradient(110deg,#e5c05c,#cfa338);border-color:#d1ad51;color:#201d13}.login-emblem{color:#d49a9a}
+
+.policy-example { white-space: pre-wrap; overflow-wrap: anywhere; }
