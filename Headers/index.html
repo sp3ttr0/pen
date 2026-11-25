@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Security Header Inspector · Pen</title>
+  <link rel="stylesheet" href="../home.css?v=caption-clear-1">
+  <link rel="stylesheet" href="inspector.css">
+  <script src="inspector.js" defer></script>
+</head>
+<body>
+  <header class="masthead">
+    <a class="wordmark" href="../" aria-label="Pen home">PEN<span class="wordmark-dot">.</span></a>
+    <nav aria-label="Navigation"><a href="../#tools">All tools</a></nav>
+  </header>
+  <main class="inspector">
+    <h1>Security Header Inspector</h1>
+    <p>Copy the final HTML document’s response headers from DevTools → Network → Headers. The inspector checks the text you paste entirely in your browser.</p>
+    <form id="inspector">
+      <label for="headers">HTTP response headers</label>
+      <textarea id="headers" rows="8" maxlength="100000" spellcheck="false" autocomplete="off" required placeholder="X-Content-Type-Options: nosniff"></textarea>
+      <div class="controls">
+        <button type="submit">Inspect headers</button>
+        <button type="button" id="example">Load example</button>
+        <button type="reset">Clear</button>
+      </div>
+    </form>
+    <p id="status" role="status"></p>
+    <section id="results" aria-labelledby="results-title" hidden>
+      <h2 id="results-title">Header review</h2>
+      <div id="findings"></div>
+    </section>
+    <p><a href="https://cheatsheetseries.owasp.org/cheatsheets/HTTP_Headers_Cheat_Sheet.html">OWASP HTTP security header guidance ↗</a></p>
+  </main>
+</body>
+</html>
