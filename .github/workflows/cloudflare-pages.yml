@@ -1,0 +1,67 @@
+name: Deploy Pen to Cloudflare Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pen-cloudflare-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Stage static site
+        run: |
+          mkdir -p deploy
+          cp index.html home.css _headers deploy/
+          cp -R COOP Headers deploy/
+      - name: Deploy production
+        env:
+          CLOUDFLARE_ACCOUNT_ID: e5b6a9f75746476b2575e7f20a6aa93c
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          if [[ -z "$CLOUDFLARE_API_TOKEN" ]]; then
+            echo "::error::Add the CLOUDFLARE_API_TOKEN repository secret with Cloudflare Pages Edit permission."
+            exit 1
+          fi
+          npx --yes wrangler@4 pages deploy deploy --project-name=pen --branch=main
+      - name: Verify production security headers
+        run: |
+          python3 - <<'PY'
+          import time
+          from pathlib import Path
+          from urllib.error import URLError
+          from urllib.request import urlopen
+
+          expected = dict(line.strip().split(": ", 1)
+                          for line in Path("_headers").read_text().splitlines()
+                          if line.startswith("  "))
+          base = "https://pen-537.pages.dev/"
+          for path in ("", "Headers/"):
+              for attempt in range(6):
+                  try:
+                      with urlopen(f"{base}{path}?deploy=${{ github.sha }}", timeout=15) as response:
+                          mismatches = [name for name, value in expected.items()
+                                        if response.headers.get(name) != value]
+                          if response.status == 200 and not mismatches:
+                              print(f"{response.geturl()}: HTTP 200, {len(expected)} headers verified")
+                              break
+                          failure = f"HTTP {response.status}; mismatched headers: {mismatches}"
+                  except (URLError, TimeoutError) as error:
+                      failure = str(error)
+                  if attempt < 5:
+                      time.sleep(5)
+              else:
+                  raise SystemExit(f"{base}{path}: {failure}")
+          PY
