@@ -36,3 +36,14 @@ input:focus-visible{outline-color:var(--cyan)}
 .primary,.primary:hover,[data-theme="light"] .primary{background:linear-gradient(110deg,#e5c05c,#cfa338);border-color:#d1ad51;color:#201d13}.login-emblem{color:#d49a9a}
 
 .policy-example { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.site-footer {
+  align-items: center;
+  flex-wrap: wrap;
+  font: 11px/1.5 system-ui, sans-serif;
+}
+.site-footer a { color: var(--text); text-decoration: none; }
+.site-footer a:hover { text-decoration: underline; }
+.site-footer .wordmark { font-size: 16px; font-weight: 800; letter-spacing: 4px; }
+.site-footer .wordmark-dot { color: var(--accent); }
+.site-footer p { margin: 0; }
