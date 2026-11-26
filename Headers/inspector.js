@@ -50,6 +50,16 @@ function inspect(headers) {
     const current = observed(name);
     if (current.length) findings.push({ name, current, guidance, deprecated: true, needsReview: true });
   }
+  const reportOnlyName = "Content-Security-Policy-Report-Only";
+  const reportOnlyValues = observed(reportOnlyName);
+  if (reportOnlyValues.length) {
+    findings.push({
+      name: reportOnlyName,
+      current: reportOnlyValues,
+      guidance: "The browser reports policy violations to the configured endpoint without blocking them. Use Content-Security-Policy to enforce a policy.",
+      reportOnly: true,
+    });
+  }
   return findings;
 }
 
@@ -81,13 +91,14 @@ function renderChecks(checks, limited = false) {
   const groups = new Map();
   for (const check of checks) {
     const group = check.deprecated ? "Deprecated Security Headers"
+      : check.reportOnly ? "Report-Only Security Headers"
       : check.current.length ? "Present Security Headers"
       : limited ? "Headers Unavailable to Browser"
       : "Missing Security Headers";
     if (!groups.has(group)) groups.set(group, []);
     groups.get(group).push(check);
   }
-  for (const title of ["Missing Security Headers", "Deprecated Security Headers", "Present Security Headers", "Headers Unavailable to Browser"]) {
+  for (const title of ["Missing Security Headers", "Deprecated Security Headers", "Report-Only Security Headers", "Present Security Headers", "Headers Unavailable to Browser"]) {
     const entries = groups.get(title) ?? [];
     if (!entries.length && title !== "Deprecated Security Headers") continue;
     const section = document.createElement("section");
